@@ -93,6 +93,19 @@ class Vec3 extends Vec2 {
     mul(vec) { return new Vec3(this.x * vec.x, this.y * vec.y, this.z * vec.z); }
 }
 
+class Rect {
+    constructor(x, y, w, h) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+    }
+
+    contains(x, y) {
+        return this.x <= x && x <= this.x + this.w && this.y <= y && y <= this.y + this.h;
+    }
+}
+
 class Transform {
     constructor() {
         this.pos = new Vec2();
@@ -104,7 +117,7 @@ class Transform {
     combine(transform) {
         let newTransform = new Transform();
 
-        newTransform.pos = this.pos.add(transform.pos);
+        newTransform.pos = this.pos.mul(transform.scale).add(transform.pos);
         newTransform.scale = this.scale.mul(transform.scale);
         newTransform.rot = this.rot.add(transform.rot);
 
@@ -115,7 +128,9 @@ class Transform {
 class Node {
     constructor() {
         this.children = [];
+        this.size = new Vec2();
         this.transform = new Transform();
+        this.clickCallback = null;
     }
 
     addChild(node) {
@@ -132,32 +147,53 @@ class Node {
         }
     }
 
+    click(mousePos, parentTransform = new Transform()) {
+        let transform = this.transform.combine(parentTransform);
+        let size = this.size.mul(transform.scale);
+        let rect = new Rect(transform.pos.x, transform.pos.y, size.x, size.y);
+
+        if(rect.contains(mousePos.x, mousePos.y) && this.clickCallback !== null) {
+            this.clickCallback(mousePos);
+        }
+
+        for(let child of this.children) {
+            child.click(mousePos, transform);
+        }
+    }
+
     _renderSelf(context2d, transform) { }
 }
 
 class Sprite extends Node {
+
+    set img(image) {
+        if(!(image in this.assets )) {
+            throw `Could not finr ${image} in loaded assets`;
+        }
+        this._imgId = image;
+        this._img = this.assets[image];
+
+        // only change size if not initiated
+        if(this.size.x + this.size.y == 0) {
+            this.size.x = this._img.width;
+            this.size.y = this._img.height;
+        }
+    }
+
+    get img() {
+        return this._imgId;
+    }
+
     constructor(assets, imgId = null) {
         super();
 
         this.assets = assets;
-        this.size = new Vec2();
         this.anchorPos = new Vec2(0.5, 0.5);
         this._img = null;
         this._imgId = null;
 
         if(imgId !== null)
             this.img = imgId;
-    }
-
-    set img(image) {
-        this._imgId = image;
-        this._img = this.assets[image];
-        this.size.x = this._img.width;
-        this.size.y = this._img.height;
-    }
-
-    get img() {
-        return this._imgId;
     }
 
     _renderSelf(context2d, transform) {
@@ -171,6 +207,23 @@ class Sprite extends Node {
             actSizeX,
             actSizeY);
     }
+
+    click(mousePos, parentTransform = new Transform()) {
+        let transform = this.transform.combine(parentTransform);
+        let size = this.size.mul(transform.scale);
+        let rect = new Rect(
+            transform.pos.x - this.anchorPos.x * size.x,
+            transform.pos.y - this.anchorPos.y * size.y,
+            size.x, size.y);
+
+        if(rect.contains(mousePos.x, mousePos.y) && this.clickCallback !== null) {
+            this.clickCallback(mousePos);
+        }
+
+        for(let child of this.children) {
+            child.click(mousePos, transform);
+        }
+    }
 }
 
 class Game {
@@ -181,6 +234,24 @@ class Game {
         this.canvas = parameters.canvas;
         this.lastFrameTime = Date.now() / 1000.0;
         this.root = new Node();
+        this.root.size = new Vec2(parameters.width, parameters.height);
+
+        //binding input
+        this.canvas.addEventListener("mousedown", this._mouseDown.bind(this), false);
+    }
+
+    _mouseDown(e) {
+        let mousePos = this._getMousePos(e);
+        this.root.click(mousePos);
+    }
+
+    _getMousePos(mouseEvent) {
+        let rect = this.canvas.getBoundingClientRect();
+
+        let x = (mouseEvent.clientX - rect.left);
+        let y = (mouseEvent.clientY - rect.top);
+
+        return { x: x, y: y };
     }
 
     _mainLoop() {
@@ -218,3 +289,50 @@ class Game {
 /******************************
  **** Minimal Tween Engine ****
  ******************************/
+/*
+class Tween {
+    constructor(from, to, time, interp, setter, callback) {
+        this.from = from;
+        this.to = to;
+        this.time = time;
+        this.interp = interp
+        this.setter =
+    }
+
+    update(dt) {
+
+    }
+}
+
+class TweenEngine {
+    // interpolators
+    get Linear() {
+        return function(x) {
+            return x;
+        }
+    }
+
+    get Sine() {
+        return function(x) {
+            return
+        }
+    }
+
+    constructor() {
+        this.tweens = [];
+    }
+
+    update(dt) {
+        this.tweens.filter(function(tween) {
+            tween.update(dt);
+            return tween.progress
+        });
+
+        for(let t of this.tweens) {
+            t.update(dt);
+
+
+        }
+    }
+}
+*/
