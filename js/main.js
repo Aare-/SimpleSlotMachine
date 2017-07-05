@@ -2,7 +2,6 @@
 
 let canvasContainer = $("#gameCanvasContainer");
 let canvas = $("#gameCanvas");
-let context2d = canvas.getContext('2d');
 
 function windowResizeEventListener() {
     canvas.width = canvasContainer.clientWidth;
@@ -58,17 +57,61 @@ function loadAssets(assetsConfig) {
      });
 }
 
+class NetEntGame extends Game {
+    _awake() {
+        super._awake();
+
+        this.testSprite = this.createSprite("SYM1");
+        this.testSprite.p = 0;
+
+        this.testSprite2 = this.createSprite("SYM3");
+        this.testSprite2.p = 0;
+
+        this.testSprite.addChild(this.testSprite2);
+
+        this.root.addChild(this.testSprite);
+    }
+
+    _update(dt) {
+        super._update(dt);
+
+        this.testSprite.p += dt;
+        let transform = this.testSprite.transform;
+        transform.pos =
+            new Vec2(
+                Math.sin(3.14 * this.testSprite.p) * 200 + this.canvas.width / 2,
+                Math.cos(3.14 * this.testSprite.p) * 200 + this.canvas.height / 2
+            );
+
+        this.testSprite2.p -= dt * 0.5;
+        transform = this.testSprite2.transform;
+        transform.pos =
+            new Vec2(
+                Math.sin(3.14 * this.testSprite2.p) * 150,
+                Math.cos(3.14 * this.testSprite2.p) * 150
+            );
+    }
+}
+
 // bind to events
 window.addEventListener('resize', windowResizeEventListener, true);
 
 // manually call resize the screen
-windowResizeEventListener();
 loadAssets("img/assets.json")
     .then((assets) => {
-        console.log("Assets loaded");
+        let context2d = canvas.getContext('2d');
+        let game = new NetEntGame({
+            fps: 60,
+            canvas: canvas,
+            context: context2d,
+            assets: assets});
+        game.awake();
 
-        //TODO: start
+        $.hide("#loadingScreen");
+        $.show("#gameCanvasContainer");
+
+        windowResizeEventListener();
     })
     .catch((error) => {
         console.log("Assets loading failed with error: "+error);
-    });;
+    });
