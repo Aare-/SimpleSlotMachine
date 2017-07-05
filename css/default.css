@@ -1,0 +1,9 @@
+#gameCanvasContainer {
+    position: fixed;
+    display: block;
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+    right: 200px;
+    background: red;
+}
