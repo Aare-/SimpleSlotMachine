@@ -1,3 +1,12 @@
-{
-
-}
+[
+{ "id" : "Bet_Line",    "path" : "img/Bet_Line.png" },
+{ "id" : "BG",          "path" : "img/BG.png" },
+{ "id" : "BTN_Spin",    "path" : "img/BTN_Spin.png" },
+{ "id" : "BTN_Spin_d",  "path" : "img/BTN_Spin_d.png" },
+{ "id" : "SYM1",        "path" : "img/SYM1.png" },
+{ "id" : "SYM3",        "path" : "img/SYM3.png" },
+{ "id" : "SYM4",        "path" : "img/SYM4.png" },
+{ "id" : "SYM5",        "path" : "img/SYM5.png" },
+{ "id" : "SYM6",        "path" : "img/SYM6.png" },
+{ "id" : "SYM7",        "path" : "img/SYM7.png" }
+]

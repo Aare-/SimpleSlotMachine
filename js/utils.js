@@ -35,14 +35,13 @@ $.ajax = function(adress) {
 
             switch(xmlhttp.status) {
                 case 200:
-                    resolve({response : xmlhttp.responseText});
-                    //document.getElementById("myDiv").innerHTML = xmlhttp.responseText;
+                    resolve(xmlhttp.responseText);
                     break;
                 case 400:
-                    reject({xmlhttp : xmlhttp});
+                    reject(`Error ${xmlhttp.status}`);
                     break;
                 default:
-                    reject({xmlhttp : xmlhttp});
+                    reject(`Error ${xmlhttp.status}`);
                     break;
             }
         };
