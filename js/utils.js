@@ -191,12 +191,15 @@ class Sprite extends Node {
         this.anchorPos = new Vec2(0.5, 0.5);
         this._img = null;
         this._imgId = null;
+        this.visible = true;
 
         if(imgId !== null)
             this.img = imgId;
     }
 
     _renderSelf(context2d, transform) {
+        if(!this.visible) return;
+
         let actSizeX = this.size.x * transform.scale.x;
         let actSizeY = this.size.y * transform.scale.y;
 
@@ -235,6 +238,7 @@ class Game {
         this.lastFrameTime = Date.now() / 1000.0;
         this.root = new Node();
         this.root.size = new Vec2(parameters.width, parameters.height);
+        this.tEngine = new TweenEngine();
 
         //binding input
         this.canvas.addEventListener("mousedown", this._mouseDown.bind(this), false);
@@ -260,6 +264,7 @@ class Game {
         this.lastFrameTime = currentTime;
 
         this._update(deltaTime);
+        this.tEngine.update(deltaTime);
         this._draw(deltaTime);
     }
 
@@ -289,50 +294,63 @@ class Game {
 /******************************
  **** Minimal Tween Engine ****
  ******************************/
-/*
+
+// interpolators
+function InterpLinear(x) { return x; }
+
 class Tween {
-    constructor(from, to, time, interp, setter, callback) {
-        this.from = from;
-        this.to = to;
-        this.time = time;
-        this.interp = interp
-        this.setter =
+    constructor(get, set, target, duration, interp, callback = null) {
+        this.get = get;
+        this.set = set;
+        this.start = this.get();
+        this.target = target;
+        this.duration = duration;
+        this.time = 0;
+        this.interp = interp;
+        this.callback = callback;
+        if(this.callback !== null)
+            this.callback.bind(this);
+        this.percent = 0;
     }
 
     update(dt) {
+        if(this.duration === 0 ) {
+            this.percent = 1.0;
+            if(this.callback !== null) {
+                this.callback();
+            }
 
+            return;
+        }
+
+        this.time = Math.min(this.time + dt, this.duration);
+
+        this.percent = this.time / this.duration;
+        let interpPercent = this.interp(this.percent);
+
+        this.set(this.start + (this.target - this.start) * interpPercent);
+
+        if(this.percent >= 1.0 && this.callback !== null) {
+            this.callback();
+        }
     }
 }
 
 class TweenEngine {
-    // interpolators
-    get Linear() {
-        return function(x) {
-            return x;
-        }
-    }
-
-    get Sine() {
-        return function(x) {
-            return
-        }
-    }
-
     constructor() {
         this.tweens = [];
     }
 
+    registerTween(tween) {
+        this.tweens.push(tween);
+    }
+
     update(dt) {
-        this.tweens.filter(function(tween) {
-            tween.update(dt);
-            return tween.progress
-        });
+        this.tweens =
+            this.tweens.filter(function(tween) {
+                tween.update(dt);
 
-        for(let t of this.tweens) {
-            t.update(dt);
-
-
-        }
+                return tween.percent < 1.0;
+            });
     }
 }
-*/

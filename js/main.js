@@ -77,9 +77,9 @@ class Spinner extends Sprite {
         super(game.assets);
 
         this.symbols = [
-            //"SYM1",
-            //"SYM3",
-            //"SYM4",
+            "SYM1",
+            "SYM3",
+            "SYM4",
             "SYM5",
             "SYM6",
             "SYM7"
@@ -166,23 +166,26 @@ class NetEntGame extends Game {
         super._awake();
 
         this.isSpinning = false;
+        this.canSpin = true;
 
+        // create background
         let background = this.createSprite("BG");
         background.anchorPos = new Vec2(0, 0);
         background.size = new Vec2(this.root.size.x, this.root.size.y);
 
+        // create spin board
         let spinBoard = new Node();
         spinBoard.transform.pos = new Vec2(70, 27);
         spinBoard.size = new Vec2(717, 536 - spinBoard.transform.pos.y * 2);
 
+        // create spin button
         this.spinButton = this.createSprite("BTN_Spin");
         this.spinButton.transform.pos = new Vec2(873, 267);
         this.spinButton.clickCallback = () => {
             this.startSpin();
         };
 
-        this.spinners = [];
-
+        // create bet lines
         for(let i = 0; i < 3; i++) {
             let betLine = this.createSprite("Bet_Line");
             betLine.transform.pos = new Vec2(
@@ -193,6 +196,8 @@ class NetEntGame extends Game {
             spinBoard.addChild(betLine);
         }
 
+        // create spinners
+        this.spinners = [];
         for(let i = 0; i < 9; i++) {
             let spinner = new Spinner(this);
             spinner.size = new Vec2(233, 155);
@@ -204,14 +209,18 @@ class NetEntGame extends Game {
             this.spinners.push(spinner);
         }
 
+        // add all elements to scene
         this.root.addChild(background);
         this.root.addChild(spinBoard);
         this.root.addChild(this.spinButton);
     }
 
     startSpin() {
+        if(!this.canSpin) return;
         if(this.isSpinning) return;
+
         this.isSpinning = true;
+        this.canSpin = false;
 
         this.spinButton.img = "BTN_Spin_d";
 
@@ -229,6 +238,7 @@ class NetEntGame extends Game {
         // performing spin
         if(this.isSpinning) {
             let isSpinning = false;
+
             for (let spinner of this.spinners) {
                 isSpinning = isSpinning || spinner.spinning;
                 spinner.updateSpin(dt);
@@ -242,23 +252,67 @@ class NetEntGame extends Game {
     }
 
     _handleSpinResult() {
-        this.spinButton.img = "BTN_Spin";
-
         //check lines for matching symbols
         let matchFound = false;
-        for(var i = 0; i < 3; i++) {
-            if(this.spinners[i * 3].symbol === this.spinners[i * 3 + 1].symbol &&
-               this.spinners[i * 3 + 1].symbol === this.spinners[i * 3 + 2].symbol) {
-                matchFound = true;
-                break;
+        let patterns = [
+            // horizontal
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+
+            // vertical
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+
+            //diagonal
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+        let scheduledForFlash = {};
+
+        // searching for matching patterns
+        for(let pattern of patterns) {
+            if(this.spinners[pattern[0]].symbol !== this.spinners[pattern[1]].symbol ||
+               this.spinners[pattern[1]].symbol !== this.spinners[pattern[2]].symbol) {
+                continue;
             }
+
+            // match found, schedyle for a flash
+            for(var i = 0; i < 3; i++) {
+                scheduledForFlash[pattern[i]] = true;
+            }
+
+            matchFound = true;
         }
 
-        if(matchFound) {
-            console.log("YOU WON!");
-        } else {
-            console.log("MATCH NOT FOUND");
+        // flashing what has been found as a match
+        for(let key in scheduledForFlash) {
+            let spinner = this.spinners[key];
+            let p = 0;
+
+            // flash animation
+            this.tEngine.registerTween(
+                new Tween(
+                    () => { return p; },
+                    (v) => {
+                        p = v;
+                        spinner.visible = Math.floor(p) % 2 === 0;
+                    },
+                    6, 1.0, InterpLinear
+                ));
         }
+
+        this.tEngine.registerTween(
+            new Tween(
+                () => { return 0; },
+                (v) => {}, 1,
+                matchFound ? 1.0 : 0.0,
+                InterpLinear,
+                () => {
+                    this.spinButton.img = "BTN_Spin";
+                    this.canSpin = true;
+                }));
     }
 }
 
